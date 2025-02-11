@@ -3,8 +3,13 @@ import numpy as np
 from PIL import Image
 import io
 import keras
+import tensorflow as tf
 
 app = Flask(__name__)
+
+# Category Names to be used to convert numeric label to string.
+category_names = ["T-shirt/top", "Trouser", "Pullover", "Dress", "Coat",
+                  "Sandal", "Shirt", "Sneaker", "Bag", "Ankle boot"]
 
 
 # Create method to preprocess images prior to sending to model
@@ -29,7 +34,6 @@ def preprocess_image(image):
 
 @app.route("/prediction", methods=["POST"])
 def prediction():
-
     if "file" not in request.files:
         return jsonify({"error": "No file uploaded"}), 400
 
@@ -41,13 +45,26 @@ def prediction():
     image = preprocess_image(image)
     # Load model
     clothing_model = keras.models.load_model('clothing_model.keras')
-    # Make prediction
-    predictions = clothing_model.predict(image)
-    highest_prediction = np.argmax(predictions).tolist()
+    # Make predictions (returns in the form of logits)
+    logits = clothing_model.predict(image)
+
+    # Apply softmax layer to convert logits to probabilities that sum to 1,
+    # and normalize the output
+    probabilities = tf.nn.softmax(logits).numpy()
+
+    # Predicted numeric class
+    highest_prediction_number = np.argmax(probabilities)
+
+    # Predicted numeric class transformed to category name
+    highest_prediction_name = category_names[highest_prediction_number]
+
+    # Create a dictionary to return the category names with associated probabilities
+    category_probabilities = {category_names[i]: round(float(probabilities[0, i]), 4) for i in
+                              range(len(category_names))}
 
     return jsonify({
-        "message": "Prediction sent.",
-        "image_category prediction": highest_prediction
+        "Predicted Class:": highest_prediction_name,
+        "List of Class probabilities": category_probabilities
     })
 
 
