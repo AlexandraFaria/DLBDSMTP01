@@ -6,3 +6,6 @@ pillow
 io
 keras
 sklearn
+pyodbc
+azure-storage-blob
+pypyodbc
