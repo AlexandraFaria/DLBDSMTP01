@@ -1,11 +1,91 @@
 from flask import Flask, request, jsonify
 import numpy as np
 from PIL import Image
-import io
-import keras
 import tensorflow as tf
+from datetime import datetime
+from tensorflow.keras.models import load_model
+from azure.storage.blob import BlobServiceClient
+from io import BytesIO
+import pyodbc
 
+
+# Flask app
 app = Flask(__name__)
+
+# enter credentials for CNN model
+# Azure Storage Account Name
+account_name = "clothingimages"
+# Azure Storage Account Access Key
+account_key = "T0d5+k5UMpXhCQLvNE8PZJfRZ6gR1bWOconGDeOc3EbNOaHGGO4OGHVPtNZhOyMKi4Gil8ib2buj+AStlO8ygw=="
+# Container Name holding model
+model_container_name = "model"
+# Container name for images
+image_container_name = "images"
+# File name (blob)
+model_name = "clothing_model.keras"
+
+# Azure SQL Database Details
+sql_server = "iuamf.database.windows.net"
+sql_database = "IUamfstudent"
+sql_driver = "{ODBC Driver 18 for SQL Server}"
+
+
+
+# Use Entra ID authentication
+sql_connect_str = f"DRIVER={sql_driver};SERVER={sql_server};DATABASE={sql_database};Authentication=ActiveDirectoryInteractive"
+
+
+# Use the client to connect to the container
+blob_connect_str = ('DefaultEndpointsProtocol=https;AccountName=' + account_name + ';AccountKey=' + account_key +
+                    ';EndpointSuffix=core.windows.net')
+blob_service_client = BlobServiceClient.from_connection_string(blob_connect_str)
+
+
+# load model from Azure Storage blob container
+def download_model():
+    blob_client = blob_service_client.get_blob_client(container=model_container_name, blob=model_name)
+
+    # Download the blob (model file)
+    model_data = blob_client.download_blob().readall()
+
+    # Save model locally with given file name.
+    model_path = "test_model.keras"
+
+    # Opens model in write-binary and creates new file.
+    with open(model_path, "wb") as f:
+        f.write(model_data)
+    # Load model using tensorflow.
+    return load_model(model_path)
+
+
+# Load model once when app starts
+model = download_model()
+
+
+# Establish connection
+def connect_db():
+    try:
+        conn = pyodbc.connect(sql_connect_str)
+        print("Connection successful!")
+        return conn
+    except Exception as e:
+        print(f"Connection failed: {e}")
+        return None
+
+
+# Function to download an image from Azure Storage image container
+def download_image(image_name):
+    try:
+        blob_client = blob_service_client.get_blob_client(container=image_container_name, blob=image_name)
+        if not blob_client.exists():
+            return None
+        image_data = blob_client.download_blob().readall()
+        image = Image.open(BytesIO(image_data)).convert("L")  # Convert to grayscale (if needed)
+        return image
+    except Exception as e:
+        print(f"Image download failed: {e}")
+        return None
+
 
 # Category Names to be used to convert numeric label to string.
 category_names = ["T-shirt/top", "Trouser", "Pullover", "Dress", "Coat",
@@ -17,7 +97,7 @@ def preprocess_image(image):
     """Convert image to grayscale, resize, normalize, and reshape
     to be the same size MNIST dataset"""
     # Convert to grayscale
-    image = image.convert("L")
+    # image = image.convert("L") ### Completed when loading image
     # Resize to match model dimensions
     image = image.resize((28, 28))
     # Normalize pixel values (all greyscale values are between 0 and 255)
@@ -32,41 +112,98 @@ def preprocess_image(image):
     return image
 
 
+def save_prediction_to_db(image_name, predicted_category, probabilities):
+    conn = connect_db()
+    if conn is None:
+        return False
+
+    try:
+        cursor = conn.cursor()
+        # Insert into image_prediction table
+        timestamp = datetime.now()
+        insert_image_prediction_query = """
+        INSERT INTO image_prediction (image_filename, predicted_category, timestamp)
+        OUTPUT INSERTED.image_id
+        VALUES(?, ?, ?);
+        """
+
+        cursor.execute(insert_image_prediction_query, (image_name, predicted_category, timestamp))
+        # Get inserted image_id
+        image_id = cursor.fetchone()[0]  # Get inserted image_id
+
+        # Convert numpy array to list
+        probabilities = [round(float(prob), 4) for prob in probabilities.flatten().tolist()]
+
+        insert_probabilities_query = """
+        INSERT INTO image_probabilities (image_id, t_shirt, trouser, pullover, dress, coat, sandal, shirt, sneaker, bag, ankle_boot)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """
+        cursor.execute(insert_probabilities_query, (image_id, *probabilities))
+
+        conn.commit()
+        cursor.close()
+        conn.close()
+        print(f" Prediction saved: {image_name} → {predicted_category}")
+        return True
+
+    except Exception as e:
+        print(f" Database insert failed: {e}")
+        return False
+
+
 @app.route("/prediction", methods=["POST"])
 def prediction():
-    if "file" not in request.files:
-        return jsonify({"error": "No file uploaded"}), 400
+    image = None
+    image_name = None
 
-    # Designates sent file from Postman request.
-    file = request.files["file"]
-    # Open image from the uploaded file
-    image = Image.open(io.BytesIO(file.read()))
-    # Preprocess the image using the function created above
-    image = preprocess_image(image)
-    # Load model
-    clothing_model = keras.models.load_model('clothing_model.keras')
+    # For testing purposes: check if an image file is uploaded via Postman
+    if "image_file" in request.files:
+        image_file = request.files["image_file"]
+        try:
+            image = Image.open(image_file).convert("L")
+            image_name = image_file.filename
+        except Exception as e:
+            return jsonify({"error": f"Image file not accepted: {e}"})
+
+    # For Azure Service Application: check for image_name from JSON (Azure Blob)
+    elif request.is_json:
+        data = request.json
+        image_name = data.get("image_name")
+        if not image_name:
+            return jsonify({"error": "Image name required."})
+        image = download_image(image_name)
+        if image is None:
+            return jsonify({"error": f"Image '{image_name}' not found in Azure Blob Storage"})
+
+    else:
+        return jsonify({"error": "Unable to load image from Azure blob."})
+
+    # Process Image
+    processed_image = preprocess_image(image)
+
+    # Make predictions on image.
     # Make predictions (returns in the form of logits)
-    logits = clothing_model.predict(image)
+    logits = model.predict(processed_image)
 
-    # Apply softmax layer to convert logits to probabilities that sum to 1,
-    # and normalize the output
+    # Apply softmax layer to convert logits to probabilities that sum to 1, and normalize output.
     probabilities = tf.nn.softmax(logits).numpy()
 
     # Predicted numeric class
-    highest_prediction_number = np.argmax(probabilities)
+    highest_prediction = np.argmax(probabilities)
 
     # Predicted numeric class transformed to category name
-    highest_prediction_name = category_names[highest_prediction_number]
+    predicted_category = category_names[highest_prediction]
 
-    # Create a dictionary to return the category names with associated probabilities
-    category_probabilities = {category_names[i]: round(float(probabilities[0, i]), 4) for i in
-                              range(len(category_names))}
+    # Save prediction and probabilities to Azure SQL database
+    save_prediction = save_prediction_to_db(image_name, predicted_category, probabilities)
+    if not save_prediction:
+        return jsonify({"error": "Failed to save prediction"})
 
     return jsonify({
-        "Predicted Class:": highest_prediction_name,
-        "List of Class probabilities": category_probabilities
+        "image_name": image_name,
+        "predicted_category": predicted_category
     })
 
 
-if __name__ == "main":
-    app.run()
+if __name__ == "__main__":
+    app.run(debug=True)
