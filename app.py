@@ -150,13 +150,12 @@ def save_prediction_to_db(image_name, predicted_category, probabilities):
         print(f" Database insert failed: {e}")
         return False
 
-
 @app.route("/prediction", methods=["POST"])
 def prediction():
     image = None
     image_name = None
 
-    # For testing purposes: check if an image file is uploaded via Postman
+    # For testing purposes: check if an image file is uploaded via Postman (Single Image)
     if "image_file" in request.files:
         image_file = request.files["image_file"]
         try:
@@ -165,44 +164,54 @@ def prediction():
         except Exception as e:
             return jsonify({"error": f"Image file not accepted: {e}"})
 
-    # For Azure Service Application: check for image_name from JSON (Azure Blob)
+        # Process Single Image
+        processed_image = preprocess_image(image)
+        logits = model.predict(processed_image)
+        probabilities = tf.nn.softmax(logits).numpy()
+        highest_prediction = np.argmax(probabilities)
+        predicted_category = category_names[highest_prediction]
+
+        # Save Single Prediction to Azure SQL
+        save_status = save_prediction_to_db(image_name, predicted_category, probabilities)
+        if not save_status:
+            return jsonify({"error": "Failed to save prediction"})
+
+        return jsonify({"image_name": image_name, "predicted_category": predicted_category})
+
+    # For Azure Service Application: Batch Processing Mode
     elif request.is_json:
         data = request.json
-        image_name = data.get("image_name")
-        if not image_name:
-            return jsonify({"error": "Image name required."})
-        image = download_image(image_name)
-        if image is None:
-            return jsonify({"error": f"Image '{image_name}' not found in Azure Blob Storage"})
+        batch_mode = data.get("batch", False)
 
-    else:
-        return jsonify({"error": "Unable to load image from Azure blob."})
+        if batch_mode:
+            blob_list = blob_service_client.get_container_client(image_container_name).list_blobs()
+            image_names = [blob.name for blob in blob_list]
 
-    # Process Image
-    processed_image = preprocess_image(image)
+            results = []  # Store results for response
 
-    # Make predictions on image.
-    # Make predictions (returns in the form of logits)
-    logits = model.predict(processed_image)
+            for image_name in image_names:
+                image = download_image(image_name)
+                if image is None:
+                    results.append({"image_name": image_name, "error": "Image not found"})
+                    continue
 
-    # Apply softmax layer to convert logits to probabilities that sum to 1, and normalize output.
-    probabilities = tf.nn.softmax(logits).numpy()
+                # Process Image
+                processed_image = preprocess_image(image)
+                logits = model.predict(processed_image)
+                probabilities = tf.nn.softmax(logits).numpy()
+                highest_prediction = np.argmax(probabilities)
+                predicted_category = category_names[highest_prediction]
 
-    # Predicted numeric class
-    highest_prediction = np.argmax(probabilities)
+                # Save Prediction Directly to Azure SQL
+                save_status = save_prediction_to_db(image_name, predicted_category, probabilities)
+                if not save_status:
+                    results.append({"image_name": image_name, "error": "Failed to save prediction"})
+                else:
+                    results.append({"image_name": image_name, "predicted_category": predicted_category})
 
-    # Predicted numeric class transformed to category name
-    predicted_category = category_names[highest_prediction]
+            return jsonify({"batch_results": results})
 
-    # Save prediction and probabilities to Azure SQL database
-    save_prediction = save_prediction_to_db(image_name, predicted_category, probabilities)
-    if not save_prediction:
-        return jsonify({"error": "Failed to save prediction"})
-
-    return jsonify({
-        "image_name": image_name,
-        "predicted_category": predicted_category
-    })
+    return jsonify({"error": "Invalid request format"})
 
 
 if __name__ == "__main__":
