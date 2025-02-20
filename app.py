@@ -26,15 +26,19 @@ image_container_name = "images"
 model_name = "clothing_model.keras"
 
 # Azure SQL Database Details
-sql_server = "iuamf.database.windows.net"
-sql_database = "IUamfstudent"
-sql_driver = "{ODBC Driver 18 for SQL Server}"
+sql_server = "datascience.database.windows.net"
+sql_database = "clothingrefund"
+sql_driver = "ODBC Driver 18 for SQL Server"
+sql_userid = "alexandrafaria"
+sql_password = "#KkVNsR%p$06fEq"
 
 
 
 # Use Entra ID authentication
-sql_connect_str = f"DRIVER={sql_driver};SERVER={sql_server};DATABASE={sql_database};Authentication=ActiveDirectoryInteractive"
+#sql_connect_str = f"DRIVER={sql_driver};SERVER={sql_server};DATABASE={sql_database};Authentication=ActiveDirectoryInteractive"
 
+# SQL Server Authentication String
+sql_connect_str = f"Driver={sql_driver};Server=tcp:{sql_server},1433;Database={sql_database};Uid={sql_userid};Pwd={sql_password};Encrypt=yes;TrustServerCertificate=no;Connection Timeout=30;"
 
 # Use the client to connect to the container
 blob_connect_str = ('DefaultEndpointsProtocol=https;AccountName=' + account_name + ';AccountKey=' + account_key +
