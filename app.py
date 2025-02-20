@@ -7,6 +7,7 @@ from tensorflow.keras.models import load_model
 from azure.storage.blob import BlobServiceClient
 from io import BytesIO
 import pyodbc
+import os
 
 
 # Flask app
@@ -90,6 +91,10 @@ def download_image(image_name):
 # Category Names to be used to convert numeric label to string.
 category_names = ["T-shirt/top", "Trouser", "Pullover", "Dress", "Coat",
                   "Sandal", "Shirt", "Sneaker", "Bag", "Ankle boot"]
+
+batch_mode = os.getenv("BATCH", "false").lower() == "true"
+if batch_mode:
+    print("Running in batch mode...")
 
 
 # Create method to preprocess images prior to sending to model
