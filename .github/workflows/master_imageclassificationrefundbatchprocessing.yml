@@ -9,6 +9,8 @@ on:
     branches:
       - master
   workflow_dispatch:
+  schedule:
+    - cron: '0 22 * * *'  # Runs every day at 10 PM UTC
 
 jobs:
   build:
@@ -78,4 +80,10 @@ jobs:
         with:
           app-name: 'imageclassificationrefundbatchprocessing'
           slot-name: 'Production'
+
+      - name: Trigger batch processing via Flask API
+        run: |
+          curl -X POST "imageclassificationrefundbatchprocessing-hfghawcuarawawcj.uksouth-01.azurewebsites.net/prediction" \
+               -H "Content-Type: application/json" \
+               -d '{"batch": true}'
           
