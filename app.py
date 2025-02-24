@@ -13,19 +13,18 @@ import os
 # Flask app
 app = Flask(__name__)
 
-# enter credentials for CNN model
-# Azure Storage Account Name
+# enter credentials for CNN model stored in Azure Storage Account Blob Container
 account_name = "clothingimages"
 # Azure Storage Account Access Key
 account_key = "T0d5+k5UMpXhCQLvNE8PZJfRZ6gR1bWOconGDeOc3EbNOaHGGO4OGHVPtNZhOyMKi4Gil8ib2buj+AStlO8ygw=="
-# Container Name holding model
+# Container Name that is holding CNN model
 model_container_name = "model"
 # Container name for images
 image_container_name = "images"
 # File name (blob)
 model_name = "clothing_model.keras"
 
-# Azure SQL Database Details
+# Azure SQL Database Details for SQL Server Authentication
 sql_server = "datascience.database.windows.net"
 sql_database = "clothingrefund"
 sql_driver = "ODBC Driver 18 for SQL Server"
@@ -33,7 +32,7 @@ sql_userid = "alexandrafaria"
 sql_password = "#KkVNsR%p$06fEq"
 
 
-
+"""Entra ID Authentication was not suitable for automatic deployment, as it needed in put each time prior to running."""
 # Use Entra ID authentication
 #sql_connect_str = f"DRIVER={sql_driver};SERVER={sql_server};DATABASE={sql_database};Authentication=ActiveDirectoryInteractive"
 
@@ -67,7 +66,7 @@ def download_model():
 model = download_model()
 
 
-# Establish connection
+# Create connection with sql database using connection string
 def connect_db():
     try:
         conn = pyodbc.connect(sql_connect_str)
@@ -81,13 +80,17 @@ def connect_db():
 # Function to download an image from Azure Storage image container
 def download_image(image_name):
     try:
+        # Establish connection with blob container
         blob_client = blob_service_client.get_blob_client(container=image_container_name, blob=image_name)
         if not blob_client.exists():
             return None
+        # reads all data in blob and returns as bytes.
         image_data = blob_client.download_blob().readall()
+        # Opens Image in bytes and converts to grey scale.
         image = Image.open(BytesIO(image_data)).convert("L")  # Convert to grayscale (if needed)
         return image
     except Exception as e:
+        # Error for failed image download.
         print(f"Image download failed: {e}")
         return None
 
@@ -96,17 +99,11 @@ def download_image(image_name):
 category_names = ["T-shirt/top", "Trouser", "Pullover", "Dress", "Coat",
                   "Sandal", "Shirt", "Sneaker", "Bag", "Ankle boot"]
 
-batch_mode = os.getenv("BATCH", "false").lower() == "true"
-if batch_mode:
-    print("Running in batch mode...")
-
 
 # Create method to preprocess images prior to sending to model
 def preprocess_image(image):
-    """Convert image to grayscale, resize, normalize, and reshape
+    """Resize, normalize, and reshape image
     to be the same size MNIST dataset"""
-    # Convert to grayscale
-    # image = image.convert("L") ### Completed when loading image
     # Resize to match model dimensions
     image = image.resize((28, 28))
     # Normalize pixel values (all greyscale values are between 0 and 255)
@@ -122,7 +119,10 @@ def preprocess_image(image):
 
 
 def save_prediction_to_db(image_name, predicted_category, probabilities):
+    # Create connection to SQL database
     conn = connect_db()
+
+    # Send error message if no connection.
     if conn is None:
         return False
 
@@ -136,23 +136,25 @@ def save_prediction_to_db(image_name, predicted_category, probabilities):
         VALUES(?, ?, ?);
         """
 
+        # Get primary key from image_prediction table
         cursor.execute(insert_image_prediction_query, (image_name, predicted_category, timestamp))
-        # Get inserted image_id
         image_id = cursor.fetchone()[0]  # Get inserted image_id
 
-        # Convert numpy array to list
+        # Convert numpy array to flattened list of probabilities in float form with 4 decimals
         probabilities = [round(float(prob), 4) for prob in probabilities.flatten().tolist()]
 
+        # Insert probabilities into coordinated clothing categories.
         insert_probabilities_query = """
         INSERT INTO image_probabilities (image_id, t_shirt, trouser, pullover, dress, coat, sandal, shirt, sneaker, bag, ankle_boot)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """
         cursor.execute(insert_probabilities_query, (image_id, *probabilities))
 
+        # Commit all entries, close cursor, and close the connection.
         conn.commit()
         cursor.close()
         conn.close()
-        print(f" Prediction saved: {image_name} → {predicted_category}")
+        print(f" Prediction saved: {image_name} = {predicted_category}")
         return True
 
     except Exception as e:
@@ -161,66 +163,39 @@ def save_prediction_to_db(image_name, predicted_category, probabilities):
 
 @app.route("/prediction", methods=["POST"])
 def prediction():
-    image = None
-    image_name = None
+    #Create a list of all blobs in container
+    blob_list = blob_service_client.get_container_client(image_container_name).list_blobs()
+    # from list of blobs, create list of blob names.
+    image_names = [blob.name for blob in blob_list]
 
-    # For testing purposes: check if an image file is uploaded via Postman (Single Image)
-    if "image_file" in request.files:
-        image_file = request.files["image_file"]
-        try:
-            image = Image.open(image_file).convert("L")
-            image_name = image_file.filename
-        except Exception as e:
-            return jsonify({"error": f"Image file not accepted: {e}"})
+    # For Postman responses. Store results.
+    results = []
 
-        # Process Single Image
+    for image_name in image_names:
+        image = download_image(image_name)
+        if image is None:
+            results.append({"image_name": image_name, "error": "Image not found"})
+            continue
+
+        # Process Image using preprocess_image function
         processed_image = preprocess_image(image)
+        # Use CNN model to create predictions.  Returns in logits format.
         logits = model.predict(processed_image)
+        # Convert logits to probabilities using softmax layer.
         probabilities = tf.nn.softmax(logits).numpy()
+        # Category with maximum probability is the clothing category classification in numeric format.
         highest_prediction = np.argmax(probabilities)
+        # Convert clothing category numeric format to string.
         predicted_category = category_names[highest_prediction]
 
-        # Save Single Prediction to Azure SQL
+        # Save maximum category prediction and clothing category probabilities to Azure SQL database.
         save_status = save_prediction_to_db(image_name, predicted_category, probabilities)
         if not save_status:
-            return jsonify({"error": "Failed to save prediction"})
+            results.append({"image_name": image_name, "error": "Failed to save prediction"})
+        else:
+            results.append({"image_name": image_name, "predicted_category": predicted_category})
 
-        return jsonify({"image_name": image_name, "predicted_category": predicted_category})
-
-    # For Azure Service Application: Batch Processing Mode
-    elif request.is_json:
-        data = request.json
-        batch_mode = data.get("batch", False)
-
-        if batch_mode:
-            blob_list = blob_service_client.get_container_client(image_container_name).list_blobs()
-            image_names = [blob.name for blob in blob_list]
-
-            results = []  # Store results for response
-
-            for image_name in image_names:
-                image = download_image(image_name)
-                if image is None:
-                    results.append({"image_name": image_name, "error": "Image not found"})
-                    continue
-
-                # Process Image
-                processed_image = preprocess_image(image)
-                logits = model.predict(processed_image)
-                probabilities = tf.nn.softmax(logits).numpy()
-                highest_prediction = np.argmax(probabilities)
-                predicted_category = category_names[highest_prediction]
-
-                # Save Prediction Directly to Azure SQL
-                save_status = save_prediction_to_db(image_name, predicted_category, probabilities)
-                if not save_status:
-                    results.append({"image_name": image_name, "error": "Failed to save prediction"})
-                else:
-                    results.append({"image_name": image_name, "predicted_category": predicted_category})
-
-            return jsonify({"batch_results": results})
-
-    return jsonify({"error": "Invalid request format"})
+    return jsonify({"batch_results": results})
 
 
 if __name__ == "__main__":
