@@ -9,6 +9,8 @@ from io import BytesIO
 import pyodbc
 import os
 
+"""Start APP"""
+
 
 # Flask app
 app = Flask(__name__)
