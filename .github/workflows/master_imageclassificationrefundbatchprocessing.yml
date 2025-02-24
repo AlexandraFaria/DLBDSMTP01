@@ -10,7 +10,7 @@ on:
       - master
   workflow_dispatch:
   schedule:
-    - cron: '50 12 * * *'  # Runs every day at 10 PM UTC
+    - cron: '48 13 * * *'  # Runs every day at 10 PM UTC
 
 jobs:
   build:
