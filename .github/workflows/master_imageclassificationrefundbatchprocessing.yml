@@ -81,9 +81,3 @@ jobs:
           app-name: 'imageclassificationrefundbatchprocessing'
           slot-name: 'Production'
 
-      - name: Trigger batch processing via Flask API
-        run: |
-          curl -X POST "imageclassificationrefundbatchprocessing-hfghawcuarawawcj.uksouth-01.azurewebsites.net/prediction" \
-               -H "Content-Type: application/json" \
-               -d '{"batch": true}'
-          
