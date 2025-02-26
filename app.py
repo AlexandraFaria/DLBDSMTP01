@@ -11,7 +11,6 @@ import os
 
 """Start APP"""
 
-
 # Flask app
 app = Flask(__name__)
 
@@ -32,7 +31,6 @@ sql_database = "clothingrefund"
 sql_driver = "ODBC Driver 18 for SQL Server"
 sql_userid = "alexandrafaria"
 sql_password = "#KkVNsR%p$06fEq"
-
 
 """Entra ID Authentication was not suitable for automatic deployment, as it needed in put each time prior to running."""
 # Use Entra ID authentication
@@ -163,6 +161,7 @@ def save_prediction_to_db(image_name, predicted_category, probabilities):
         print(f" Database insert failed: {e}")
         return False
 
+
 @app.route("/prediction", methods=["POST"])
 def prediction():
     #Create a list of all blobs in container
@@ -201,4 +200,4 @@ def prediction():
 
 
 if __name__ == "__main__":
-    app.run( )
+    app.run()
