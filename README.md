@@ -23,7 +23,7 @@ The design goal:
 - Clothing categorization probabilities and most likely category classification stored remotely 
     using Azure SQL Server and Database
 
-![ClothingPredictionDatabase.jpg](Images_ReadMe%2FClothingPredictionDatabase.jpg)
+![ClothingPredictionDatabase.drawio.png](Images_ReadMe%2FClothingPredictionDatabase.drawio.png)
 
 [Design Solution]
 
