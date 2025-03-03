@@ -101,20 +101,15 @@ and image probabilities.
         From SQL_Scripts folder run query: image_prediction 
         From SQL_Scripts folder run query: Image_Probabilities
 
-11. Update SQL Database access information
+11. Update SQL Database access information in app.py 
 Note: Ideally SQL access would not be hardcoded. Originally Microsoft Entra ID was used, however this
 required manually entering Azure Microsoft ID and Password for every run, limiting automatic deployment. 
 ![img.png](Images_ReadMe/img_9.png)
 
 
-
-- Run Flask APP locally 
-``````commandline
-flask run
-``````
-
-- Set up Microsoft Task Scheduler creating a Basic Task to initiate batch processing 
-    Under Actions Tab:
+12. Set up Microsoft Task Scheduler creating a Basic Task to initiate batch processing 
+    
+Under Actions Tab:
     1. Select New
     2. Name: Batch Processing
     3. Action: Start a Program
@@ -128,4 +123,11 @@ flask run
        - Daily 
        - At 23:00 every day
        - Satus: Enabled
+
+12. Run Flask APP locally in python IDE
+``````commandline
+flask run
+``````
+Note: In order for Microsoft Task Scheduler to work correctly App must be running in IDE. 
+
 
