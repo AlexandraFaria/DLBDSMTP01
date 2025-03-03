@@ -112,19 +112,19 @@ required manually entering Azure Microsoft ID and Password for every run, limiti
 12. Set up Microsoft Task Scheduler creating a Basic Task to initiate batch processing 
     
 Under Actions Tab:
-    1. Select New
-    2. Name: Batch Processing
-    3. Action: Start a Program
-    4. Settings: 
-         - Program/Script: curl
-         - Add arguments:
-          ``````commandline
-          curl -X POST "http://127.0.0.1:5000/prediction" -H "Content-Type: application/json"
-          ``````
-    5. Triggers tab: 
-       - Daily 
-       - At 23:00 every day
-       - Satus: Enabled
+- Select New 
+- Name: Batch Processing
+- Action: Start a Program
+  - Settings: 
+  - Program/Script: curl
+    - Add arguments:
+              ``````commandline
+              curl -X POST "http://127.0.0.1:5000/prediction" -H "Content-Type: application/json"
+              ``````
+  - Triggers tab: 
+    - Daily 
+      - At 23:00 every day 
+      - Satus: Enabled
 
 12. Run Flask APP locally in python IDE
 ``````commandline
