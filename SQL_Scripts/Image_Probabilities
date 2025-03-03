@@ -1,0 +1,16 @@
+CREATE TABLE [dbo].[Image_Probabilities] (
+    [probabilities_id] INT        IDENTITY (1, 1) NOT NULL,
+    [image_id]         INT        NOT NULL,
+    [t_shirt]          FLOAT (53) NOT NULL,
+    [trouser]          FLOAT (53) NOT NULL,
+    [pullover]         FLOAT (53) NOT NULL,
+    [dress]            FLOAT (53) NOT NULL,
+    [coat]             FLOAT (53) NOT NULL,
+    [sandal]           FLOAT (53) NOT NULL,
+    [shirt]            FLOAT (53) NOT NULL,
+    [sneaker]          FLOAT (53) NOT NULL,
+    [bag]              FLOAT (53) NOT NULL,
+    [ankle_boot]       FLOAT (53) NOT NULL,
+    CONSTRAINT [PK_Image_Probabilities] PRIMARY KEY CLUSTERED ([probabilities_id] ASC),
+    CONSTRAINT [FK_Image_Probabilities_image_prediction] FOREIGN KEY ([image_id]) REFERENCES [dbo].[image_prediction] ([image_id])
+);

@@ -1,0 +1,7 @@
+CREATE TABLE [dbo].[image_prediction] (
+    [image_id]           INT           IDENTITY (1, 1) NOT NULL,
+    [image_filename]     VARCHAR (500) NOT NULL,
+    [predicted_category] VARCHAR (100) NOT NULL,
+    [timestamp]          DATETIME      NOT NULL,
+    CONSTRAINT [PK_image_prediction] PRIMARY KEY CLUSTERED ([image_id] ASC)
+);
