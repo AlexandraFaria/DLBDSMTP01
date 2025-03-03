@@ -88,17 +88,23 @@ pip install -r requirements.txt
 ![img_3.png](Images_ReadMe/img_3.png)
 
 9. Create Azure SQL Server and Database to store clothing category probabilities and image classification data.
-    In Security: Make sure to select SQL Server Authentication only.
+    In Security: Make sure to select SQL Server Authentication only and save SQL UserId and SQL Password.
+Server Name: datascience
+Database Name: clothingrefund
+
 ![img.png](Images_ReadMe/img_6.png)
 
 10. Using Query editor log in with SQL Server Authentication to create two tables to store image predictions 
 and image probabilities. 
-![img.png](img_7.png)
-- Select New Query: 
-- Run Script: 
-- 
+![img.png](Images_ReadMe/img_7.png)
+    - Select New Query: 
+        From SQL_Scripts folder run query: image_prediction 
+        From SQL_Scripts folder run query: Image_Probabilities
 
-
+11. Update SQL Database access information
+Note: Ideally SQL access would not be hardcoded. Originally Microsoft Entra ID was used, however this
+required manually entering Azure Microsoft ID and Password for every run, limiting automatic deployment. 
+![img.png](Images_ReadMe/img_9.png)
 
 
 
