@@ -135,6 +135,13 @@ Under Actions Tab:
 flask run
 ``````
 Note: In order for Microsoft Task Scheduler to work correctly App must be running in IDE. 
+![Screenshot 2025-03-04 154051.png](Images_ReadMe%2FScreenshot%202025-03-04%20154051.png)
+![Screenshot 2025-03-04 154257.png](Images_ReadMe%2FScreenshot%202025-03-04%20154257.png)
+Screen Shot of Image Prediction Table in Azure SQL Database 
+![img_12.png](Images_ReadMe%2Fimg_12.png)
+Screen Shot of Image Probabilities Table in Azure SQL Database
+![img_13.png](Images_ReadMe%2Fimg_13.png)
+
 
 ## Ideal Solution Resolution
 
