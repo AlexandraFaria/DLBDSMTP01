@@ -43,6 +43,8 @@ and perhaps there may be additional dependencies to run the ODBC Driver for SQL 
 While Azure Web App is currently unable to automatically batch process images, solution is currently 
 running on local computer using Microsoft Task Scheduler to send curl request to initiate run.
 
+![Current_Image_ClassificationSolution.drawio.png](Images_ReadMe%2FCurrent_Image_ClassificationSolution.drawio.png)
+
 
 ## System Requirements 
 ***
