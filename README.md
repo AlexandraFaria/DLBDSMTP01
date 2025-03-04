@@ -75,45 +75,45 @@ pip install -r requirements.txt
 7. Create an Azure Storage Account named: clothingimages
 ![img_5.png](Images_ReadMe/img_5.png)
 
-6. Create two containers within Azure Storage Account: 
+8. Create two containers within Azure Storage Account: 
     - images (stores all in coming images to be processed.)
       (For Testing Purposes file named images/ClothingImages in GitHub Repository may be used)
     - model (stores TensorFlow model 'clothing_model.keras')
 ![img.png](Images_ReadMe/img.png)
 
-7. Store files in corresponding containers.
+9. Store files in corresponding containers.
 ![img_1.png](Images_ReadMe/img_1.png)
 ![img_2.png](Images_ReadMe/img_2.png)
 
 
-8. In app.py update account_key variable (line 20)
+10. In app.py update account_key variable (line 20)
    - account_key = 'xxxxxxx'
      - This information is found in Microsoft Azure Storage Account under Security + Networking tab: 
        - Access keys
        - Copy key1 and insert into account_key string variable
 ![img_3.png](Images_ReadMe/img_3.png)
 
-9. Create Azure SQL Server and Database to store clothing category probabilities and image classification data.
+11. Create Azure SQL Server and Database to store clothing category probabilities and image classification data.
     In Security: Make sure to select SQL Server Authentication only and save SQL UserId and SQL Password.
 Server Name: datascience
 Database Name: clothingrefund
 
 ![img.png](Images_ReadMe/img_6.png)
 
-10. Using Query editor log in with SQL Server Authentication to create two tables to store image predictions 
+12. Using Query editor log in with SQL Server Authentication to create two tables to store image predictions 
 and image probabilities. 
 ![img.png](Images_ReadMe/img_7.png)
     - Select New Query: 
         From SQL_Scripts folder run query: image_prediction 
         From SQL_Scripts folder run query: Image_Probabilities
 
-11. Update SQL Database access information in app.py 
+13. Update SQL Database access information in app.py 
 Note: Ideally SQL access would not be hardcoded. Originally Microsoft Entra ID was used, however this
 required manually entering Azure Microsoft ID and Password for every run, limiting automatic deployment. 
 ![img.png](Images_ReadMe/img_9.png)
 
 
-12. Set up Microsoft Task Scheduler creating a Basic Task to initiate batch processing 
+14. Set up Microsoft Task Scheduler creating a Basic Task to initiate batch processing 
     
 Under Actions Tab:
 - Select New 
@@ -130,16 +130,23 @@ Under Actions Tab:
       - At 23:00 every day 
       - Satus: Enabled
 
-12. Run Flask APP locally in python IDE
+15. Run Flask APP locally in python IDE
 ``````commandline
 flask run
 ``````
 Note: In order for Microsoft Task Scheduler to work correctly App must be running in IDE. 
+For demonstration purposes time set to 15:42pm. 
+
 ![Screenshot 2025-03-04 154051.png](Images_ReadMe%2FScreenshot%202025-03-04%20154051.png)
+
 ![Screenshot 2025-03-04 154257.png](Images_ReadMe%2FScreenshot%202025-03-04%20154257.png)
+
 Screen Shot of Image Prediction Table in Azure SQL Database 
+
 ![img_12.png](Images_ReadMe%2Fimg_12.png)
+
 Screen Shot of Image Probabilities Table in Azure SQL Database
+
 ![img_13.png](Images_ReadMe%2Fimg_13.png)
 
 
