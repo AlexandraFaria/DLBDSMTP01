@@ -24,7 +24,7 @@ The design goal:
     using Azure SQL Server and Database
 
 
-![ImageclassificationConcept.drawio.png](..%2F..%2FDownloads%2FImageclassificationConcept.drawio.png)
+![ImageclassificationConcept.drawio.png](Images_ReadMe%2FImageclassificationConcept.drawio.png)
 ![ClothingPredictionDatabase.drawio.png](Images_ReadMe%2FClothingPredictionDatabase.drawio.png)
 
 
