@@ -148,10 +148,13 @@ Screen Shot of Image Probabilities Table in Azure SQL Database
 1. Finish Project by creating Azure Web App Service
 
 2. Use GitHub Actions for Continuous Integration and Continuous Deployment with YAML file
+
 ![img_8.png](Images_ReadMe%2Fimg_8.png)
 
 3. Use cron setting in YAML file and gunicorn start-up command to automatically run application at 11pm. 
+
 ![img_10.png](Images_ReadMe%2Fimg_10.png)
+
 ![img_11.png](Images_ReadMe%2Fimg_11.png)
 
    
