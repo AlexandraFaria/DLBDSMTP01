@@ -23,9 +23,11 @@ The design goal:
 - Clothing categorization probabilities and most likely category classification stored remotely 
     using Azure SQL Server and Database
 
+
+![ImageclassificationConcept.drawio.png](..%2F..%2FDownloads%2FImageclassificationConcept.drawio.png)
 ![ClothingPredictionDatabase.drawio.png](Images_ReadMe%2FClothingPredictionDatabase.drawio.png)
 
-[Design Solution]
+
 
 ## Challenges During Implementation
 - Microsoft Entra ID Security Login for SQL Database
@@ -49,7 +51,7 @@ running on local computer using Microsoft Task Scheduler to send curl request to
 - ODBC Driver 18 for SQL Server
 - Microsoft Azure Portal Login
 
-## Recreate Image Classification Solution
+## Recreate Local Image Classification Solution
 Note: Currently if all files were downloaded, access to Azure Blob Storage and Azure SQL Database 
 is not accessible due to Firewall and Security Features. In order to recreate current solution, 
 individual Azure Blob Storage and Azure SQL Database must be created. 
@@ -131,5 +133,11 @@ Under Actions Tab:
 flask run
 ``````
 Note: In order for Microsoft Task Scheduler to work correctly App must be running in IDE. 
+
+## Ideal Solution 
+
+1. Finish Project by creating Azure Web App Service
+
+
 
 
