@@ -45,7 +45,6 @@ running on local computer using Microsoft Task Scheduler to send curl request to
 
 ![Current_Image_ClassificationSolution.drawio.png](Images_ReadMe%2FCurrent_Image_ClassificationSolution.drawio.png)
 
-
 ## System Requirements 
 ***
 
