@@ -24,7 +24,7 @@ The design goal:
     using Azure SQL Server and Database
 
 # Original Concept Architecture:
-![ImageclassificationConcept.drawio.png](Images_ReadMe%2FImageclassificationConcept.drawio.png)
+![ImageclassificationConcept (2).jpg](Images_ReadMe%2FImageclassificationConcept%20%282%29.jpg)
 
 # SQL Database Entity-Relationship Diagram
 
